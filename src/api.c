@@ -1174,12 +1174,23 @@ char *cg_build_path(const char *name, char *path, const char *type)
 	return path;
 }
 
+static int cg_create_control_group(const char *path);
+
 static int __cgroup_attach_task_pid(char *path, pid_t tid)
 {
 	int ret = 0;
 	FILE *tasks = NULL;
 
 	tasks = fopen(path, "we");
+
+	if( errno == ENOENT ) {
+		/* try to create cgroup */
+		ret = cg_create_control_group(path);
+		if( ret )
+			return ret;
+		tasks = fopen(path, "we");
+	}
+
 	if (!tasks) {
 		switch (errno) {
 		case EPERM:
